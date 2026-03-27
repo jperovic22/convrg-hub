@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CONVRG Media — Operations Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ===================== PASSWORD GATE ===================== */
+    #gate {
+      position: fixed;
+      inset: 0;
+      background: #0e0e0e;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    #gate.hidden { display: none; }
+
+    .gate-logo {
+      width: 160px;
+      mix-blend-mode: screen;
+      margin-bottom: 8px;
+    }
+
+    .gate-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #444;
+    }
+
+    .gate-input {
+      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 15px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      width: 280px;
+      text-align: center;
+      letter-spacing: 0.1em;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .gate-input:focus { border-color: rgba(255,255,255,0.3); }
+
+    .gate-btn {
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 40px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      width: 280px;
+      transition: opacity 0.2s;
+    }
+
+    .gate-btn:hover { opacity: 0.85; }
+
+    .gate-error {
+      font-size: 12px;
+      color: #e74c3c;
+      font-weight: 600;
+      height: 16px;
+    }
+
+    /* ===================== CLAUDE CHAT ===================== */
+    #claude-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 52px;
+      height: 52px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      z-index: 1000;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-size: 22px;
+    }
+
+    #claude-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    }
+
+    #claude-panel {
+      position: fixed;
+      bottom: 92px;
+      right: 28px;
+      width: 380px;
+      height: 520px;
+      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 1000;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+
+    #claude-panel.open { display: flex; }
+
+    .chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-header-left { display: flex; align-items: center; gap: 10px; }
+
+    .chat-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .chat-title { font-size: 13px; font-weight: 700; color: #fff; }
+    .chat-sub { font-size: 10px; color: #555; }
+
+    .chat-close {
+      color: #444;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .chat-close:hover { color: #fff; }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 88%;
+    }
+
+    .msg.user { align-self: flex-end; }
+    .msg.assistant { align-self: flex-start; }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .msg.user .msg-bubble {
+      background: #fff;
+      color: #000;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.assistant .msg-bubble {
+      background: rgba(255,255,255,0.06);
+      color: #ddd;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-footer {
+      padding: 12px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      resize: none;
+      transition: border-color 0.2s;
+      max-height: 100px;
+    }
+
+    .chat-input:focus { border-color: rgba(255,255,255,0.25); }
+    .chat-input::placeholder { color: #444; }
+
+    .chat-send {
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      flex-shrink: 0;
+      align-self: flex-end;
+      transition: opacity 0.2s;
+    }
+
+    .chat-send:hover { opacity: 0.8; }
+    .chat-send:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    :root {
+      --black: #0e0e0e;
+      --dark: #161616;
+      --card: #1a1a1a;
+      --border: rgba(255,255,255,0.08);
+      --blue: #ffffff;
+      --blue-glow: rgba(255,255,255,0.15);
+      --white: #ffffff;
+      --gray: #888;
+      --font: 'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--font);
+      overflow-x: hidden;
+    }
+
+    /* ===================== HERO ===================== */
+    .hero {
+      position: relative;
+      height: 100vh;
+      min-height: 700px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568833/convrg/hero-bg.jpg');
+      background-size: cover;
+      background-position: center 30%;
+      transform: scale(1.05);
+      animation: heroZoom 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroZoom {
+      from { transform: scale(1.05); }
+      to { transform: scale(1.12); }
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(14,14,14,0.3) 0%,
+        rgba(14,14,14,0.5) 40%,
+        rgba(14,14,14,0.95) 100%
+      );
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      animation: fadeUp 1.2s ease forwards;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-logo {
+      width: 280px;
+      mix-blend-mode: screen;
+      margin-bottom: 8px;
+    }
+
+    .hero-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #aaa;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 6px 16px;
+      border-radius: 100px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .hero-title {
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--white);
+    }
+
+    .hero-title span { color: var(--blue); }
+
+    .hero-sub {
+      font-size: 15px;
+      color: var(--gray);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 2;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    .scroll-indicator span {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, #555, transparent);
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* ===================== NAV ===================== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: linear-gradient(to bottom, rgba(14,14,14,0.9), transparent);
+      backdrop-filter: blur(10px);
+      transition: background 0.3s;
+    }
+
+    nav.scrolled {
+      background: rgba(14,14,14,0.95);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      width: 120px;
+      mix-blend-mode: screen;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #666;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--white); }
+
+    /* ===================== SECTIONS ===================== */
+    section {
+      padding: 100px 48px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      max-width: 60px;
+      height: 1px;
+      background: #555;
+      opacity: 0.6;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 48px;
+      color: var(--white);
+    }
+
+    /* ===================== SUPERCROSS CARD ===================== */
+    .sx-hero-card {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      height: 500px;
+      cursor: pointer;
+      margin-bottom: 24px;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .sx-hero-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,126,227,0.3);
+    }
+
+    .sx-hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568835/convrg/reel-bg.jpg');
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.6s ease;
+    }
+
+    .sx-hero-card:hover .sx-hero-bg { transform: scale(1.04); }
+
+    .sx-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(14,14,14,0.85) 0%, rgba(14,14,14,0.3) 100%);
+    }
+
+    .sx-hero-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px;
+    }
+
+    .sx-logo-img {
+      width: 160px;
+      opacity: 0.95;
+    }
+
+    .sx-hero-info {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .sx-hero-text h2 {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .sx-hero-text p {
+      font-size: 14px;
+      color: #888;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(231,76,60,0.15);
+      border: 1px solid rgba(231,76,60,0.4);
+      padding: 10px 18px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #e74c3c;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #e74c3c;
+      animation: pulse-red 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* Athlete row */
+    .athlete-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .athlete-tag.full-mgmt {
+      color: #2ecc71;
+    }
+
+    .athlete-tag.media-only {
+      color: #888;
+    }
+
+    .athlete-card {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      height: 220px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .athlete-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    .athlete-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      transition: transform 0.5s ease;
+    }
+
+    .athlete-card:hover .athlete-img { transform: scale(1.06); }
+
+    .athlete-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%);
+    }
+
+    .athlete-info {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+    }
+
+    .athlete-name {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .athlete-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* Open button */
+    .open-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: all 0.25s ease;
+    }
+
+    .athlete-card:hover .open-btn,
+    .sx-hero-card:hover .open-btn { opacity: 1; transform: translateY(0); }
+
+    /* ===================== BRAND GRID ===================== */
+    .brand-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .brand-card {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      height: 280px;
+      cursor: pointer;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .brand-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,126,227,0.2);
+    }
+
+    .brand-card-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.6s ease;
+    }
+
+    .brand-card:hover .brand-card-bg { transform: scale(1.06); }
+
+    .brand-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(14,14,14,0.9) 0%, rgba(14,14,14,0.4) 100%);
+      transition: background 0.4s ease;
+    }
+
+    .brand-card:hover .brand-card-overlay {
+      background: linear-gradient(135deg, rgba(14,14,14,0.85) 0%, rgba(14,14,14,0.2) 100%);
+    }
+
+    .brand-card-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .brand-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 100px;
+      width: fit-content;
+    }
+
+    .status-active { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+    .status-setup { background: rgba(243,156,18,0.15); color: #f39c12; border: 1px solid rgba(243,156,18,0.3); }
+
+    .brand-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
+
+    .brand-name {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .brand-desc {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .brand-arrow {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .brand-card:hover .brand-arrow {
+      background: var(--blue);
+      border-color: var(--blue);
+      box-shadow: 0 0 20px var(--blue-glow);
+      transform: rotate(45deg);
+    }
+
+    /* Add new card */
+    .brand-card-add {
+      border: 1px dashed rgba(255,255,255,0.12);
+      border-radius: 16px;
+      height: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .brand-card-add:hover {
+      border-color: var(--blue);
+      background: rgba(59,126,227,0.05);
+      box-shadow: 0 0 30px rgba(59,126,227,0.1);
+    }
+
+    .add-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #555;
+      transition: all 0.3s ease;
+    }
+
+    .brand-card-add:hover .add-icon {
+      border-color: var(--blue);
+      color: var(--blue);
+      box-shadow: 0 0 20px var(--blue-glow);
+    }
+
+    .add-label { font-size: 13px; font-weight: 600; color: #555; }
+    .brand-card-add:hover .add-label { color: var(--blue); }
+
+    /* ===================== TEAM ===================== */
+    #team {
+      padding: 100px 48px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .team-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+
+    .team-card:hover { border-color: rgba(255,255,255,0.15); }
+
+    .team-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .team-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #222, #333);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .team-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .team-role {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #444;
+      margin-top: 2px;
+    }
+
+    .team-tasks { display: flex; flex-direction: column; gap: 6px; }
+
+    .team-task {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: background 0.15s;
+    }
+
+    .team-task:hover { background: rgba(255,255,255,0.06); }
+
+    .task-check {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .task-check.done { background: #2ecc71; border-color: #2ecc71; }
+    .task-check.done::after { content: '✓'; font-size: 10px; color: #fff; font-weight: 900; }
+
+    .task-text {
+      font-size: 12px;
+      color: #aaa;
+      flex: 1;
+      line-height: 1.4;
+    }
+
+    .task-text.done { text-decoration: line-through; color: #444; }
+
+    .task-delete {
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      transition: color 0.15s;
+      opacity: 0;
+    }
+
+    .team-task:hover .task-delete { opacity: 1; }
+    .task-delete:hover { color: #e74c3c; }
+
+    .task-add-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .task-input {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12px;
+      color: #fff;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .task-input::placeholder { color: #333; }
+    .task-input:focus { border-color: rgba(255,255,255,0.2); }
+
+    .task-add-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      color: #666;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.15s;
+    }
+
+    .task-add-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    /* ===================== FOOTER ===================== */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo { width: 80px; mix-blend-mode: screen; opacity: 0.4; }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #444;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--white); }
+
+    /* ===================== MODAL ===================== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      animation: modalIn 0.3s ease forwards;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
+    .modal h2 { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+    .modal p { font-size: 13px; color: #666; line-height: 1.7; margin-bottom: 20px; }
+
+    .modal-command {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      color: var(--blue);
+      margin-bottom: 24px;
+      word-break: break-all;
+      line-height: 1.6;
+    }
+
+    .modal-actions { display: flex; gap: 12px; }
+
+    .btn-primary {
+      flex: 1;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #2d6fd4;
+      box-shadow: 0 8px 24px var(--blue-glow);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.05);
+      color: #888;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    /* ===================== SCROLL ANIMATIONS ===================== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ===================== QUICK LINKS ===================== */
+    .quick-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 60px;
+    }
+
+    .quick-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      text-decoration: none;
+      color: #666;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: all 0.25s ease;
+    }
+
+    .quick-link:hover {
+      border-color: var(--blue);
+      color: var(--white);
+      background: rgba(59,126,227,0.08);
+      box-shadow: 0 0 20px rgba(59,126,227,0.1);
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin: 0 48px;
+      max-width: calc(1400px - 96px);
+    }
+
+    .notion-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #888;
+      text-decoration: none;
+      transition: all 0.2s;
+      position: relative;
+      z-index: 10;
+    }
+
+    .notion-btn:hover {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border-color: rgba(255,255,255,0.25);
+    }
+
+    .brand-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ===================== RACE WEEKEND SCHEDULE ===================== */
+    #weekend {
+      padding: 100px 48px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .weekend-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 48px;
+    }
+
+    .weekend-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(231,76,60,0.12);
+      border: 1px solid rgba(231,76,60,0.3);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #e74c3c;
+      margin-bottom: 16px;
+    }
+
+    .weekend-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #e74c3c;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .weekend-meta {
+      text-align: right;
+    }
+
+    .weekend-meta-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 4px;
+    }
+
+    .weekend-meta-value {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .schedule-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .schedule-card-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .schedule-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .schedule-card-day {
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    .schedule-items {
+      padding: 8px 0;
+    }
+
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      transition: background 0.15s;
+    }
+
+    .schedule-item:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .schedule-time {
+      font-size: 12px;
+      font-weight: 700;
+      color: #555;
+      min-width: 60px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+    }
+
+    .schedule-event {
+      font-size: 13px;
+      color: #ccc;
+      flex: 1;
+    }
+
+    .schedule-item.highlight .schedule-time {
+      color: #e74c3c;
+    }
+
+    .schedule-item.highlight .schedule-event {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .schedule-item.section-break {
+      padding: 6px 24px 4px;
+      pointer-events: none;
+    }
+
+    .schedule-section-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #333;
+    }
+
+    .schedule-separator {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .event-info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+    }
+
+    .event-info-item {
+      background: var(--card);
+      padding: 16px 20px;
+      text-align: center;
+    }
+
+    .event-info-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    .event-info-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PASSWORD GATE -->
+  <div id="gate">
+    <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568828/convrg/CONVRG.jpg" class="gate-logo" alt="CONVRG Media">
+    <div class="gate-label">Operations Hub</div>
+    <input class="gate-input" id="gateInput" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')checkGate()">
+    <div class="gate-error" id="gateError"></div>
+    <button class="gate-btn" onclick="checkGate()">Enter</button>
+  </div>
+
+  <!-- CLAUDE CHAT -->
+  <div id="claude-btn" onclick="toggleChat()" title="Ask Claude">🤖</div>
+  <div id="claude-panel">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-avatar">✦</div>
+        <div>
+          <div class="chat-title">Claude — CONVRG Assistant</div>
+          <div class="chat-sub">Knows your brands, athletes & workflow</div>
+        </div>
+      </div>
+      <div class="chat-close" onclick="toggleChat()">×</div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg assistant">
+        <div class="msg-bubble">Hey Johnny 👋 I'm your CONVRG assistant. Ask me anything — content ideas, captions, race weekend prep, athlete posts, brand strategy. What do you need?</div>
+      </div>
+    </div>
+    <div class="chat-footer">
+      <textarea class="chat-input" id="chatInput" placeholder="Ask anything..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+      <button class="chat-send" id="chatSend" onclick="sendMessage()">↑</button>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568828/convrg/CONVRG.jpg" class="nav-logo" alt="CONVRG Media">
+    <ul class="nav-links">
+      <li><a href="#team">Team</a></li>
+      <li><a href="#supercross">Supercross</a></li>
+      <li><a href="#weekend">Race Weekend</a></li>
+      <li><a href="#brands">Brands</a></li>
+      <li><a href="https://notion.so" target="_blank">Notion</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568828/convrg/CONVRG.jpg" class="hero-logo" alt="CONVRG Media">
+      <div class="hero-tag">Operations Hub</div>
+      <h1 class="hero-title">Where it all<br><span>comes together.</span></h1>
+      <p class="hero-sub">Supercross · Athletes · Brands · Content</p>
+    </div>
+    <div class="scroll-indicator">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <section id="team">
+    <div class="section-label reveal">CONVRG Media</div>
+    <h2 class="section-title reveal reveal-delay-1">The Team</h2>
+    <div class="team-grid" id="teamGrid">
+
+      <div class="team-card reveal reveal-delay-1">
+        <div class="team-header">
+          <div class="team-avatar">JP</div>
+          <div><div class="team-name">Johnny P</div><div class="team-role">Social Media Manager</div></div>
+        </div>
+        <div class="team-tasks" id="tasks-jp"></div>
+        <div class="task-add-row">
+          <input class="task-input" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTask('jp',this)">
+          <button class="task-add-btn" onclick="addTask('jp',this.previousElementSibling)">+</button>
+        </div>
+      </div>
+
+      <div class="team-card reveal reveal-delay-2">
+        <div class="team-header">
+          <div class="team-avatar">PC</div>
+          <div><div class="team-name">Porkchop</div><div class="team-role">Videographer</div></div>
+        </div>
+        <div class="team-tasks" id="tasks-pc"></div>
+        <div class="task-add-row">
+          <input class="task-input" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTask('pc',this)">
+          <button class="task-add-btn" onclick="addTask('pc',this.previousElementSibling)">+</button>
+        </div>
+      </div>
+
+      <div class="team-card reveal reveal-delay-3">
+        <div class="team-header">
+          <div class="team-avatar">CN</div>
+          <div><div class="team-name">Cole Nasty</div><div class="team-role">Videographer</div></div>
+        </div>
+        <div class="team-tasks" id="tasks-cn"></div>
+        <div class="task-add-row">
+          <input class="task-input" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTask('cn',this)">
+          <button class="task-add-btn" onclick="addTask('cn',this.previousElementSibling)">+</button>
+        </div>
+      </div>
+
+      <div class="team-card reveal reveal-delay-1">
+        <div class="team-header">
+          <div class="team-avatar">SD</div>
+          <div><div class="team-name">Shane Doyle</div><div class="team-role">CEO</div></div>
+        </div>
+        <div class="team-tasks" id="tasks-sd"></div>
+        <div class="task-add-row">
+          <input class="task-input" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTask('sd',this)">
+          <button class="task-add-btn" onclick="addTask('sd',this.previousElementSibling)">+</button>
+        </div>
+      </div>
+
+      <div class="team-card reveal reveal-delay-2">
+        <div class="team-header">
+          <div class="team-avatar">JC</div>
+          <div><div class="team-name">Jacob</div><div class="team-role">Graphic Designer</div></div>
+        </div>
+        <div class="team-tasks" id="tasks-jc"></div>
+        <div class="task-add-row">
+          <input class="task-input" placeholder="Add task..." onkeydown="if(event.key==='Enter')addTask('jc',this)">
+          <button class="task-add-btn" onclick="addTask('jc',this.previousElementSibling)">+</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- SUPERCROSS -->
+  <section id="supercross">
+    <div class="section-label reveal">Supercross Operation</div>
+    <h2 class="section-title reveal reveal-delay-1">2026 Season</h2>
+
+    <!-- Main SX card -->
+    <div class="sx-hero-card reveal reveal-delay-2" onclick="openWorkspace('Supercross')">
+      <div class="sx-hero-bg"></div>
+      <div class="sx-hero-overlay"></div>
+      <div class="sx-hero-content">
+        <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568829/convrg/SX-LOGO.png" class="sx-logo-img" alt="Supercross">
+        <div class="sx-hero-info">
+          <div class="sx-hero-text">
+            <h2>Round 11 — Detroit</h2>
+            <p>Ford Field · March 28, 2026 · 17-Round Season</p>
+          </div>
+          <div class="live-badge">
+            <div class="live-dot"></div>
+            This Weekend
+          </div>
+        </div>
+      </div>
+      <button class="open-btn">Open Workspace →</button>
+    </div>
+
+    <!-- Athletes -->
+    <div class="athlete-row">
+      <div class="athlete-card reveal reveal-delay-1" onclick="openWorkspace('Julien Beaumer')">
+        <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568991/athletes/julien-beaumer.png" class="athlete-img" alt="Julien Beaumer">
+        <div class="athlete-overlay"></div>
+        <div class="athlete-info">
+          <div class="athlete-name">Julien Beaumer</div>
+          <div class="athlete-tag full-mgmt">● Full Management</div>
+        </div>
+        <button class="open-btn">Open →</button>
+      </div>
+      <div class="athlete-card reveal reveal-delay-2" onclick="openWorkspace('Jordon Smith')">
+        <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568837/athletes/jordon-smith.png" class="athlete-img" alt="Jordon Smith">
+        <div class="athlete-overlay"></div>
+        <div class="athlete-info">
+          <div class="athlete-name">Jordon Smith</div>
+          <div class="athlete-tag full-mgmt">● Full Management</div>
+        </div>
+        <button class="open-btn">Open →</button>
+      </div>
+      <div class="athlete-card reveal reveal-delay-3" onclick="openWorkspace('Joey Savatgy')">
+        <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568992/athletes/joey-savatgy.png" class="athlete-img" alt="Joey Savatgy">
+        <div class="athlete-overlay"></div>
+        <div class="athlete-info">
+          <div class="athlete-name">Joey Savatgy</div>
+          <div class="athlete-tag full-mgmt">● Full Management</div>
+        </div>
+        <button class="open-btn">Open →</button>
+      </div>
+      <div class="athlete-card reveal reveal-delay-1" onclick="openWorkspace('Ken Roczen')">
+        <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568838/athletes/ken-roczen.png" class="athlete-img" alt="Ken Roczen">
+        <div class="athlete-overlay"></div>
+        <div class="athlete-info">
+          <div class="athlete-name">Ken Roczen</div>
+          <div class="athlete-tag media-only">Media Assets</div>
+        </div>
+        <button class="open-btn">Open →</button>
+      </div>
+      <div class="athlete-card reveal reveal-delay-2" onclick="openWorkspace('Christian Craig')">
+        <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568993/athletes/christian-craig.png" class="athlete-img" alt="Christian Craig">
+        <div class="athlete-overlay"></div>
+        <div class="athlete-info">
+          <div class="athlete-name">Christian Craig</div>
+          <div class="athlete-tag media-only">Media Assets</div>
+        </div>
+        <button class="open-btn">Open →</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- RACE WEEKEND SCHEDULE -->
+  <section id="weekend">
+    <div class="weekend-header">
+      <div>
+        <div class="weekend-badge reveal"><span class="dot"></span>This Weekend</div>
+        <div class="section-label reveal">Race Weekend</div>
+        <h2 class="section-title reveal reveal-delay-1">Round 11 — Detroit</h2>
+        <p style="font-size:14px;color:#555;margin-top:8px;" class="reveal reveal-delay-2">Ford Field · March 29, 2026</p>
+      </div>
+      <div class="weekend-meta reveal">
+        <div class="weekend-meta-label">Doors Open</div>
+        <div class="weekend-meta-value">12:00 PM</div>
+      </div>
+    </div>
+
+    <div class="schedule-grid">
+
+      <!-- Daytime / Qualifying -->
+      <div class="schedule-card reveal reveal-delay-1">
+        <div class="schedule-card-header">
+          <div class="schedule-card-title">Qualifying</div>
+          <div class="schedule-card-day">Saturday Afternoon</div>
+        </div>
+        <div class="schedule-items">
+          <div class="schedule-item">
+            <div class="schedule-time">12:30p</div>
+            <div class="schedule-event">250SX Qualifying 1</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">1:00p</div>
+            <div class="schedule-event">450SX Qualifying 1</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">2:15p</div>
+            <div class="schedule-event">250SX Qualifying 2</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">2:45p</div>
+            <div class="schedule-event">450SX Qualifying 2</div>
+          </div>
+          <div class="schedule-separator"></div>
+          <div class="schedule-item">
+            <div class="schedule-time">1:00p</div>
+            <div class="schedule-event">Race Day Live begins</div>
+          </div>
+          <div class="schedule-item highlight">
+            <div class="schedule-time">3:00p</div>
+            <div class="schedule-event">Track Walk (Rider Access)</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">4:30p</div>
+            <div class="schedule-event">Race Day Live ends</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Evening Program -->
+      <div class="schedule-card reveal reveal-delay-2">
+        <div class="schedule-card-header">
+          <div class="schedule-card-title">Evening Program</div>
+          <div class="schedule-card-day">Saturday Night</div>
+        </div>
+        <div class="schedule-items">
+          <div class="schedule-item">
+            <div class="schedule-time">6:30p</div>
+            <div class="schedule-event">Opening Ceremonies</div>
+          </div>
+          <div class="schedule-separator"></div>
+          <div class="schedule-item section-break">
+            <div class="schedule-section-label">Heat Races</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">6:45p</div>
+            <div class="schedule-event">250SX Heat 1</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">7:00p</div>
+            <div class="schedule-event">250SX Heat 2</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">7:15p</div>
+            <div class="schedule-event">450SX Heat 1</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">7:30p</div>
+            <div class="schedule-event">450SX Heat 2</div>
+          </div>
+          <div class="schedule-separator"></div>
+          <div class="schedule-item section-break">
+            <div class="schedule-section-label">LCQs & Mains</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">7:45p</div>
+            <div class="schedule-event">250SX LCQ</div>
+          </div>
+          <div class="schedule-item">
+            <div class="schedule-time">8:00p</div>
+            <div class="schedule-event">450SX LCQ</div>
+          </div>
+          <div class="schedule-item highlight">
+            <div class="schedule-time">8:57p</div>
+            <div class="schedule-event">250SX Main Event</div>
+          </div>
+          <div class="schedule-item highlight">
+            <div class="schedule-time">9:29p</div>
+            <div class="schedule-event">450SX Main Event</div>
+          </div>
+        </div>
+        <div class="event-info-grid">
+          <div class="event-info-item">
+            <div class="event-info-label">AMA Reg.</div>
+            <div class="event-info-value">8a – 12p</div>
+          </div>
+          <div class="event-info-item">
+            <div class="event-info-label">Paddock</div>
+            <div class="event-info-value">7a – 11p</div>
+          </div>
+          <div class="event-info-item">
+            <div class="event-info-label">Venue</div>
+            <div class="event-info-value">Ford Field</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CLIENT BRANDS -->
+  <section id="brands">
+    <div class="section-label reveal">Client Brands</div>
+    <h2 class="section-title reveal reveal-delay-1">Your Portfolio</h2>
+
+    <div class="brand-grid">
+
+      <!-- Engine Ice -->
+      <div class="brand-card reveal reveal-delay-1" onclick="openWorkspace('Engine Ice')">
+        <div class="brand-card-bg" style="background-image: url('https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568836/convrg/EI-Product-SxS.jpg');"></div>
+        <div class="brand-card-overlay"></div>
+        <div class="brand-card-content">
+          <div class="brand-status-row">
+            <div class="brand-status status-active">● Active</div>
+            <a class="notion-btn" href="https://www.notion.so/e37da77416288336b8e9815acb90a697" target="_blank" onclick="event.stopPropagation()">📋 Notion</a>
+          </div>
+          <div class="brand-bottom">
+            <div>
+              <div class="brand-name">Engine Ice</div>
+              <div class="brand-desc">Hi-Performance Coolant · Instagram · Facebook · Twitter</div>
+            </div>
+            <div class="brand-arrow">↗</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Atlas -->
+      <div class="brand-card reveal reveal-delay-2" onclick="openWorkspace('Atlas')">
+        <div class="brand-card-bg" style="background: #0a0a0a;"></div>
+        <div class="brand-card-overlay" style="background: linear-gradient(135deg, rgba(10,10,10,0.7) 0%, rgba(10,10,10,0.2) 100%);"></div>
+        <div class="brand-card-content">
+          <div class="brand-status-row">
+            <div class="brand-status status-active">● Active</div>
+            <a class="notion-btn" href="https://www.notion.so/32fda774162881f69113d4e79d95219a" target="_blank" onclick="event.stopPropagation()">📋 Notion</a>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+            <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568839/convrg/atlas-logo.png" style="width:55%;max-width:180px;opacity:0.95;filter:brightness(1.1);">
+          </div>
+          <div class="brand-bottom">
+            <div>
+              <div class="brand-name">Atlas Brace</div>
+              <div class="brand-desc">Neck braces · Body armor · Boots</div>
+            </div>
+            <div class="brand-arrow">↗</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STACYC -->
+      <div class="brand-card reveal reveal-delay-3" onclick="openWorkspace('STACYC')">
+        <div class="brand-card-bg" style="background: linear-gradient(135deg, #0a1a0a, #0d2a0d);"></div>
+        <div class="brand-card-overlay"></div>
+        <div class="brand-card-content">
+          <div class="brand-status-row">
+            <div class="brand-status status-active">● Active</div>
+            <a class="notion-btn" href="https://www.notion.so/32fda7741628813a98f4dbdd38672485" target="_blank" onclick="event.stopPropagation()">📋 Notion</a>
+          </div>
+          <div class="brand-bottom">
+            <div>
+              <div class="brand-name">STACYC</div>
+              <div class="brand-desc">Electric balance bikes for kids</div>
+            </div>
+            <div class="brand-arrow">↗</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add new -->
+      <div class="brand-card-add reveal reveal-delay-1" onclick="showAddBrand()">
+        <div class="add-icon">+</div>
+        <div class="add-label">Add New Brand</div>
+      </div>
+
+    </div>
+
+    <!-- Quick Links -->
+    <div class="quick-links reveal">
+      <a class="quick-link" href="https://notion.so" target="_blank">📋 Notion</a>
+      <a class="quick-link" href="https://replicate.com/account/billing" target="_blank">🎨 Replicate Credits</a>
+      <a class="quick-link" href="obsidian://open?vault=CONVRG Media" target="_blank">🔮 Obsidian Vault</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568828/convrg/CONVRG.jpg" class="footer-logo" alt="CONVRG Media">
+    <ul class="footer-links">
+      <li><a href="https://convrgmedia.com" target="_blank">convrgmedia.com</a></li>
+      <li><a href="https://notion.so" target="_blank">Notion</a></li>
+    </ul>
+  </footer>
+
+  <!-- WORKSPACE MODAL -->
+  <div class="modal-overlay" id="workspaceModal">
+    <div class="modal">
+      <div class="modal-tag">Open Workspace</div>
+      <h2 id="modalTitle">Brand</h2>
+      <p>Run this in your terminal to open the workspace with Claude Code loaded with this brand's full context:</p>
+      <div class="modal-command" id="modalCommand"></div>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="copyCommand()">Copy Command</button>
+        <button class="btn-secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD BRAND MODAL -->
+  <div class="modal-overlay" id="addBrandModal">
+    <div class="modal">
+      <div class="modal-tag">New Client</div>
+      <h2>Add New Brand</h2>
+      <p>Run this in Terminal, replacing "Brand Name" with your client's name. It creates the workspace folder and Claude context file automatically.</p>
+      <div class="modal-command">mkdir -p "/Users/john/CONVRG Media/Brand Name" && echo "# Brand Name" > "/Users/john/CONVRG Media/Brand Name/CLAUDE.md"</div>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="copyAddCommand()">Copy Command</button>
+        <button class="btn-secondary" onclick="closeAddModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Nav scroll effect
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 80);
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => observer.observe(el));
+
+    // ── TEAM TASKS ──
+    const members = ['jp','pc','cn','sd','jc'];
+
+    function saveTasks(member, tasks) {
+      localStorage.setItem('tasks_' + member, JSON.stringify(tasks));
+    }
+
+    function loadTasks(member) {
+      return JSON.parse(localStorage.getItem('tasks_' + member) || '[]');
+    }
+
+    function renderTasks(member) {
+      const container = document.getElementById('tasks-' + member);
+      const tasks = loadTasks(member);
+      container.innerHTML = tasks.map((t, i) => `
+        <div class="team-task">
+          <div class="task-check ${t.done ? 'done' : ''}" onclick="toggleTask('${member}',${i})"></div>
+          <div class="task-text ${t.done ? 'done' : ''}">${t.text}</div>
+          <div class="task-delete" onclick="deleteTask('${member}',${i})">×</div>
+        </div>
+      `).join('');
+    }
+
+    function addTask(member, input) {
+      const text = input.value.trim();
+      if (!text) return;
+      const tasks = loadTasks(member);
+      tasks.push({ text, done: false });
+      saveTasks(member, tasks);
+      renderTasks(member);
+      input.value = '';
+    }
+
+    function toggleTask(member, index) {
+      const tasks = loadTasks(member);
+      tasks[index].done = !tasks[index].done;
+      saveTasks(member, tasks);
+      renderTasks(member);
+    }
+
+    function deleteTask(member, index) {
+      const tasks = loadTasks(member);
+      tasks.splice(index, 1);
+      saveTasks(member, tasks);
+      renderTasks(member);
+    }
+
+    // Seed Johnny P's tasks from Detroit R11 checklist (only if not already set)
+    if (!localStorage.getItem('tasks_jp')) {
+      const jpTasks = [
+        { text: 'Presser Clips', done: true },
+        { text: 'Insta Vids', done: true },
+        { text: 'Recap Reel', done: true },
+        { text: 'STACYC', done: true },
+        { text: 'Oakley Overtake', done: true },
+        { text: 'Kawasaki All Access — Tuesday', done: true },
+        { text: 'Tune In Graphic — Wednesday', done: true },
+        { text: 'Fan Guide — Wednesday', done: true },
+        { text: 'Track Preview / Track Map — Thursday', done: false },
+        { text: 'Betting Odds — Thursday night (Best Bets article Wed, odds graphics)', done: false },
+        { text: 'Dunlop Track Walk', done: false },
+        { text: 'Throwback Content — leading into next weekend', done: false },
+        { text: 'RM Fantasy Poll', done: false },
+        { text: 'Send highlights to Jenna', done: false },
+        { text: 'SMX Insider Teaser — Thursday / Friday', done: false },
+        { text: 'SMX Insider Pre Show — Thursday', done: false },
+        { text: 'St. Jude Posts / Stories', done: false },
+        { text: 'Hit all GP Activations in Fan Fest — Stories', done: false },
+        { text: 'NXT Bet Saturday last chance graphic', done: false },
+        { text: 'Upload Presser', done: false },
+        { text: 'STACYC Story Posts — Wednesday & Saturday', done: false },
+      ];
+      saveTasks('jp', jpTasks);
+    }
+
+    members.forEach(renderTasks);
+
+    // Workspace paths
+    const paths = {
+      'Supercross': '/Users/john/CONVRG Media/Supercross',
+      'Engine Ice': '/Users/john/CONVRG Media/Engine Ice',
+      'Atlas': '/Users/john/CONVRG Media/Atlas',
+      'STACYC': '/Users/john/CONVRG Media/STACYC',
+      'Julien Beaumer': '/Users/john/CONVRG Media/Athletes/Julien Beaumer',
+      'Jordon Smith': '/Users/john/CONVRG Media/Athletes/Jordon Smith',
+      'Joey Savatgy': '/Users/john/CONVRG Media/Athletes/Joey Savatgy',
+      'Ken Roczen': '/Users/john/CONVRG Media/Athletes/Ken Roczen',
+      'Christian Craig': '/Users/john/CONVRG Media/Athletes/Christian Craig',
+    };
+
+    function openWorkspace(name) {
+      const path = paths[name] || `/Users/john/CONVRG Media/${name}`;
+      document.getElementById('modalTitle').textContent = name;
+      document.getElementById('modalCommand').textContent = `cd "${path}" && claude`;
+      document.getElementById('workspaceModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('workspaceModal').classList.remove('active');
+    }
+
+    function showAddBrand() {
+      document.getElementById('addBrandModal').classList.add('active');
+    }
+
+    function closeAddModal() {
+      document.getElementById('addBrandModal').classList.remove('active');
+    }
+
+    function copyCommand() {
+      navigator.clipboard.writeText(document.getElementById('modalCommand').textContent);
+      const btn = document.querySelector('#workspaceModal .btn-primary');
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy Command', 2000);
+    }
+
+    function copyAddCommand() {
+      const code = document.querySelector('#addBrandModal .modal-command').textContent;
+      navigator.clipboard.writeText(code);
+    }
+
+    // Close on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(o => {
+      o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); });
+    });
+
+    // ── PASSWORD GATE ──
+    const GATE_PW = 'porkcheesy';
+    const gate = document.getElementById('gate');
+
+    if (localStorage.getItem('convrg_auth') === 'true') gate.classList.add('hidden');
+
+    function checkGate() {
+      const val = document.getElementById('gateInput').value;
+      if (val === GATE_PW) {
+        localStorage.setItem('convrg_auth', 'true');
+        gate.classList.add('hidden');
+      } else {
+        document.getElementById('gateError').textContent = 'Incorrect password';
+        document.getElementById('gateInput').value = '';
+      }
+    }
+
+    // ── CLAUDE CHAT ──
+    let CLAUDE_KEY = localStorage.getItem('convrg_claude_key') || '';
+    const SYSTEM_PROMPT = `You are the AI assistant for CONVRG Media, a social media agency run by Johnny P (Social Media Manager), Shane Doyle (CEO), Porkchop and Cole Nasty (Videographers), and Jacob (Graphic Designer).
+
+CONVRG manages:
+- Supercross 2026 season (17 rounds, currently Round 11 Detroit)
+- Athletes: Julien Beaumer (KTM, full management), Jordon Smith (Triumph, full management), Joey Savatgy (full management), Ken Roczen (media assets), Christian Craig (media assets)
+- Brands: Engine Ice (powersports coolant), Atlas Brace (neck braces/protective gear), STACYC (electric balance bikes for kids)
+
+Content pillars: Product, Education, Culture, Community
+Platforms: Instagram (primary), Facebook, Twitter/X, YouTube
+Notion calendars are set up for Engine Ice, Atlas Brace, and STACYC.
+
+Be concise, practical, and agency-focused. Help with captions, content ideas, race weekend planning, hashtags, posting schedules, and brand strategy. Always use #AtlasBrace #Atlas for Atlas content.`;
+
+    const chatHistory = [];
+    let chatOpen = false;
+
+    function toggleChat() {
+      chatOpen = !chatOpen;
+      document.getElementById('claude-panel').classList.toggle('open', chatOpen);
+      if (chatOpen) document.getElementById('chatInput').focus();
+    }
+
+    function addMessage(role, text) {
+      chatHistory.push({ role, content: text });
+      const msgs = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.innerHTML = `<div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div>`;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const btn = document.getElementById('chatSend');
+      const text = input.value.trim();
+      if (!text) return;
+
+      if (!CLAUDE_KEY) {
+        const key = prompt('Enter your Anthropic API key to activate Claude:');
+        if (!key) return;
+        CLAUDE_KEY = key.trim();
+        localStorage.setItem('convrg_claude_key', CLAUDE_KEY);
+      }
+
+      input.value = '';
+      btn.disabled = true;
+      addMessage('user', text);
+
+      const thinking = document.createElement('div');
+      thinking.className = 'msg assistant';
+      thinking.innerHTML = '<div class="msg-bubble" style="color:#555">Thinking...</div>';
+      document.getElementById('chatMessages').appendChild(thinking);
+
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': CLAUDE_KEY,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-allow-browser': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-opus-4-6',
+            max_tokens: 1024,
+            system: SYSTEM_PROMPT,
+            messages: chatHistory
+          })
+        });
+        const data = await res.json();
+        thinking.remove();
+        const reply = data.content?.[0]?.text || 'Something went wrong — try again.';
+        addMessage('assistant', reply);
+      } catch(e) {
+        thinking.remove();
+        addMessage('assistant', 'Connection error — check your internet and try again.');
+      }
+
+      btn.disabled = false;
+      input.focus();
+    }
+  </script>
+
+</body>
+</html>
