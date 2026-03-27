@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>CONVRG Media — Operations Hub</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0e0e0e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CONVRG">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -1337,6 +1344,96 @@
       font-weight: 700;
       color: #fff;
     }
+
+    /* ===================== MOBILE ===================== */
+    @media (max-width: 768px) {
+      /* Nav */
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+
+      /* Sections */
+      section, #team, #weekend { padding: 56px 16px; }
+      .section-title { font-size: 26px; margin-bottom: 28px; }
+
+      /* Hero */
+      .hero { min-height: 100svh; }
+      .hero-logo { width: 180px; }
+      .hero-title { font-size: 34px; }
+      .hero-sub { font-size: 13px; }
+
+      /* Supercross card */
+      .sx-hero-card { height: 320px; }
+      .sx-hero-content { padding: 20px; }
+      .sx-hero-text h2 { font-size: 26px; }
+      .sx-hero-info { flex-direction: column; align-items: flex-start; gap: 14px; }
+
+      /* Athletes — single column, taller cards for readability */
+      .athlete-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .athlete-card { height: 200px; }
+      .athlete-name { font-size: 14px; font-weight: 800; }
+      .athlete-tag { font-size: 10px; }
+      .athlete-info { bottom: 12px; left: 12px; right: 12px; }
+      .open-btn { opacity: 1; transform: translateY(0); font-size: 10px; padding: 6px 10px; }
+
+      /* Race schedule — stack to single column */
+      .schedule-grid { grid-template-columns: 1fr; gap: 12px; }
+      .schedule-card-header { padding: 14px 16px 12px; }
+      .schedule-card-title { font-size: 10px; }
+      .schedule-item { padding: 11px 16px; gap: 12px; }
+      .schedule-time { font-size: 12px; min-width: 52px; }
+      .schedule-event { font-size: 13px; line-height: 1.4; }
+
+      /* Event info strip */
+      .event-info-grid { grid-template-columns: repeat(3, 1fr); }
+      .event-info-item { padding: 12px 8px; }
+      .event-info-label { font-size: 8px; }
+      .event-info-value { font-size: 12px; }
+
+      /* Weekend header */
+      .weekend-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .weekend-meta { text-align: left; }
+
+      /* Brand grid */
+      .brand-grid { grid-template-columns: 1fr; gap: 12px; }
+      .brand-card { height: 220px; }
+      .brand-name { font-size: 22px; }
+
+      /* Team grid */
+      .team-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 24px; }
+
+      /* Friday/Saturday team cards */
+      .team-grid > div[style*="grid-template-columns"],
+      div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+
+      /* Quick links */
+      .quick-links { gap: 8px; margin-top: 36px; flex-direction: column; }
+      .quick-link { font-size: 12px; padding: 12px 16px; }
+
+      /* Footer */
+      footer { flex-direction: column; gap: 16px; padding: 24px 16px; text-align: center; }
+      .footer-links { gap: 16px; flex-wrap: wrap; justify-content: center; }
+
+      /* Claude chat — full width slide-up */
+      #claude-panel {
+        bottom: 0; right: 0; left: 0;
+        width: 100%; height: 72svh;
+        border-radius: 20px 20px 0 0;
+        border-bottom: none;
+      }
+      #claude-btn { bottom: 20px; right: 20px; }
+
+      /* Safe area padding for notched phones */
+      body { padding-bottom: env(safe-area-inset-bottom); }
+    }
+
+    @media (max-width: 480px) {
+      .athlete-card { height: 175px; }
+      .sx-hero-card { height: 280px; }
+      .hero-title { font-size: 30px; }
+    }
   </style>
 </head>
 <body>
@@ -2097,6 +2194,10 @@ Be concise, practical, and agency-focused. Help with captions, content ideas, ra
 
       btn.disabled = false;
       input.focus();
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
   </script>
 
