@@ -1406,6 +1406,22 @@
   <section id="team">
     <div class="section-label reveal">CONVRG Media</div>
     <h2 class="section-title reveal reveal-delay-1">The Team</h2>
+
+    <!-- TEAM WEEKEND TASKS -->
+    <div class="team-card reveal" style="margin-bottom: 32px;">
+      <div class="team-header">
+        <div class="team-avatar" style="background: linear-gradient(135deg, #e74c3c, #c0392b); font-size:18px;">📋</div>
+        <div>
+          <div class="team-name">This Weekend</div>
+          <div class="team-role">Team Tasks — Everyone</div>
+        </div>
+      </div>
+      <div class="team-tasks" id="tasks-team"></div>
+      <div class="task-add-row">
+        <input class="task-input" id="team-task-input" placeholder="Add team task..." onkeydown="if(event.key==='Enter')addTask('team',this)">
+        <button class="task-add-btn" onclick="addTask('team',document.getElementById('team-task-input'))">+</button>
+      </div>
+    </div>
     <div class="team-grid" id="teamGrid">
 
       <div class="team-card reveal reveal-delay-1">
@@ -1823,7 +1839,7 @@
     const SUPA_KEY = 'sb_publishable_bQ-Ye8GmXXHcsyTiChMMZw_6cCX0use';
     const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    const members = ['jp','pc','cn','sd','jc'];
+    const members = ['team','jp','pc','cn','sd','jc'];
     const taskCache = {};
 
     function renderTasksFromCache(member) {
