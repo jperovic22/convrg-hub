@@ -2098,13 +2098,17 @@
     const GATE_PW = 'porkcheesy';
     const gate = document.getElementById('gate');
 
-    if (localStorage.getItem('convrg_auth') === 'true') gate.classList.add('hidden');
+    if (localStorage.getItem('convrg_auth') === 'true') {
+      gate.classList.add('hidden');
+      setTimeout(requestNotifications, 1000);
+    }
 
     function checkGate() {
       const val = document.getElementById('gateInput').value;
       if (val === GATE_PW) {
         localStorage.setItem('convrg_auth', 'true');
         gate.classList.add('hidden');
+        setTimeout(requestNotifications, 1000);
       } else {
         document.getElementById('gateError').textContent = 'Incorrect password';
         document.getElementById('gateInput').value = '';
@@ -2245,8 +2249,6 @@ Be concise, practical, and agency-focused. Help with captions, content ideas, ra
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         await navigator.serviceWorker.register('sw.js').catch(() => {});
-        // Ask for notification permission after gate clears
-        setTimeout(requestNotifications, 2000);
       });
     }
   </script>
