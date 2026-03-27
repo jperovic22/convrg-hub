@@ -2,20 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CONVRG Media — Operations Hub</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0e0e0e">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CONVRG">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1347,79 +1337,6 @@
       font-weight: 700;
       color: #fff;
     }
-
-    /* ===================== MOBILE ===================== */
-    @media (max-width: 768px) {
-      nav { padding: 16px 20px; }
-      .nav-links { display: none; }
-
-      .hero { min-height: 100svh; }
-      .hero-logo { width: 200px; }
-      .hero-title { font-size: 36px; }
-      .hero-sub { font-size: 13px; }
-
-      section, #team, #weekend {
-        padding: 64px 20px;
-      }
-
-      .section-title { font-size: 26px; margin-bottom: 32px; }
-
-      /* Supercross card */
-      .sx-hero-card { height: 340px; }
-      .sx-hero-content { padding: 24px; }
-      .sx-hero-text h2 { font-size: 28px; }
-      .sx-hero-info { flex-direction: column; align-items: flex-start; gap: 16px; }
-
-      /* Athletes — 2 cols on mobile */
-      .athlete-row {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-      }
-      .athlete-card { height: 180px; }
-      .athlete-name { font-size: 13px; }
-      .open-btn { opacity: 1; transform: translateY(0); font-size: 10px; padding: 6px 10px; }
-
-      /* Brand grid — 1 col */
-      .brand-grid { grid-template-columns: 1fr; gap: 14px; }
-      .brand-card { height: 240px; }
-      .brand-name { font-size: 22px; }
-
-      /* Team grid — 1 col */
-      .team-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 32px; }
-
-      /* Weekend header stack */
-      .weekend-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-      .weekend-meta { text-align: left; }
-
-      /* Quick links — wrap tighter */
-      .quick-links { gap: 8px; margin-top: 40px; }
-      .quick-link { font-size: 11px; padding: 11px 14px; }
-
-      /* Footer */
-      footer { flex-direction: column; gap: 16px; padding: 24px 20px; text-align: center; }
-      .footer-links { gap: 16px; }
-
-      /* Claude chat panel — full screen on mobile */
-      #claude-panel {
-        bottom: 0;
-        right: 0;
-        left: 0;
-        width: 100%;
-        height: 70svh;
-        border-radius: 20px 20px 0 0;
-        border-bottom: none;
-      }
-      #claude-btn { bottom: 20px; right: 20px; }
-
-      /* Safe area for notched phones */
-      body { padding-bottom: env(safe-area-inset-bottom); }
-    }
-
-    @media (max-width: 480px) {
-      .athlete-row { grid-template-columns: repeat(2, 1fr); }
-      .athlete-card { height: 160px; }
-      .sx-hero-card { height: 300px; }
-    }
   </style>
 </head>
 <body>
@@ -1901,55 +1818,55 @@
     }, { threshold: 0.1 });
     reveals.forEach(el => observer.observe(el));
 
-    // ── TEAM TASKS ──
+    // ── TEAM TASKS — Supabase real-time ──
+    const SUPA_URL = 'https://uzasbzylhocnxkozfpeh.supabase.co';
+    const SUPA_KEY = 'sb_publishable_bQ-Ye8GmXXHcsyTiChMMZw_6cCX0use';
+    const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
     const members = ['jp','pc','cn','sd','jc'];
+    const taskCache = {};
 
-    function saveTasks(member, tasks) {
-      localStorage.setItem('tasks_' + member, JSON.stringify(tasks));
-    }
-
-    function loadTasks(member) {
-      return JSON.parse(localStorage.getItem('tasks_' + member) || '[]');
-    }
-
-    function renderTasks(member) {
+    function renderTasksFromCache(member) {
       const container = document.getElementById('tasks-' + member);
-      const tasks = loadTasks(member);
-      container.innerHTML = tasks.map((t, i) => `
+      if (!container) return;
+      const tasks = taskCache[member] || [];
+      container.innerHTML = tasks.length ? tasks.map(t => `
         <div class="team-task">
-          <div class="task-check ${t.done ? 'done' : ''}" onclick="toggleTask('${member}',${i})"></div>
+          <div class="task-check ${t.done ? 'done' : ''}" onclick="toggleTask('${t.id}','${member}')"></div>
           <div class="task-text ${t.done ? 'done' : ''}">${t.text}</div>
-          <div class="task-delete" onclick="deleteTask('${member}',${i})">×</div>
+          <div class="task-delete" onclick="deleteTask('${t.id}','${member}')">×</div>
         </div>
-      `).join('');
+      `).join('') : '<div style="font-size:11px;color:#333;padding:4px 0">No tasks</div>';
     }
 
-    function addTask(member, input) {
+    async function loadAndRender(member) {
+      const { data } = await sb.from('tasks').select('*').eq('member', member).order('position').order('created_at');
+      taskCache[member] = data || [];
+      renderTasksFromCache(member);
+    }
+
+    async function addTask(member, input) {
       const text = input.value.trim();
       if (!text) return;
-      const tasks = loadTasks(member);
-      tasks.push({ text, done: false });
-      saveTasks(member, tasks);
-      renderTasks(member);
+      const position = (taskCache[member] || []).length;
+      await sb.from('tasks').insert({ member, text, done: false, position });
       input.value = '';
     }
 
-    function toggleTask(member, index) {
-      const tasks = loadTasks(member);
-      tasks[index].done = !tasks[index].done;
-      saveTasks(member, tasks);
-      renderTasks(member);
+    async function toggleTask(id, member) {
+      const task = (taskCache[member] || []).find(t => t.id === id);
+      if (!task) return;
+      await sb.from('tasks').update({ done: !task.done }).eq('id', id);
     }
 
-    function deleteTask(member, index) {
-      const tasks = loadTasks(member);
-      tasks.splice(index, 1);
-      saveTasks(member, tasks);
-      renderTasks(member);
+    async function deleteTask(id, member) {
+      await sb.from('tasks').delete().eq('id', id);
     }
 
-    // Seed Johnny P's tasks from Detroit R11 checklist (only if not already set)
-    if (!localStorage.getItem('tasks_jp')) {
+    // Seed Johnny P's Detroit R11 tasks if none exist yet
+    async function seedJPTasks() {
+      const { data } = await sb.from('tasks').select('id').eq('member', 'jp').limit(1);
+      if (data && data.length > 0) return;
       const jpTasks = [
         { text: 'Presser Clips', done: true },
         { text: 'Insta Vids', done: true },
@@ -1972,11 +1889,27 @@
         { text: 'NXT Bet Saturday last chance graphic', done: false },
         { text: 'Upload Presser', done: false },
         { text: 'STACYC Story Posts — Wednesday & Saturday', done: false },
-      ];
-      saveTasks('jp', jpTasks);
+      ].map((t, i) => ({ ...t, member: 'jp', position: i }));
+      await sb.from('tasks').insert(jpTasks);
     }
 
-    members.forEach(renderTasks);
+    // Real-time: re-render any member whose tasks change
+    function setupRealtime() {
+      sb.channel('tasks-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, payload => {
+          const member = payload.new?.member || payload.old?.member;
+          if (member) loadAndRender(member);
+        })
+        .subscribe();
+    }
+
+    async function initTasks() {
+      await seedJPTasks();
+      await Promise.all(members.map(loadAndRender));
+      setupRealtime();
+    }
+
+    initTasks();
 
     // Workspace paths
     const paths = {
@@ -2127,13 +2060,6 @@ Be concise, practical, and agency-focused. Help with captions, content ideas, ra
 
       btn.disabled = false;
       input.focus();
-    }
-
-    // ===================== SERVICE WORKER =====================
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      });
     }
   </script>
 
