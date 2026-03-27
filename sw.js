@@ -1,4 +1,4 @@
-const CACHE = 'convrg-hub-v3';
+const CACHE = 'convrg-hub-v4';
 const ASSETS = [
   '/convrg-hub/',
   '/convrg-hub/index.html',
@@ -22,10 +22,9 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first for API calls, cache first for assets
-  if (e.request.url.includes('anthropic.com') || e.request.url.includes('googleapis.com')) {
-    return;
-  }
+  if (e.request.url.includes('anthropic.com') ||
+      e.request.url.includes('googleapis.com') ||
+      e.request.url.includes('supabase.co')) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {
@@ -34,5 +33,34 @@ self.addEventListener('fetch', e => {
         return res;
       })
       .catch(() => caches.match(e.request))
+  );
+});
+
+// ── PUSH NOTIFICATIONS ──
+self.addEventListener('push', e => {
+  if (!e.data) return;
+  const data = e.data.json();
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/convrg-hub/icon-192.png',
+      badge: '/convrg-hub/icon-192.png',
+      tag: data.tag || 'convrg-task',
+      data: data.data || {},
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+// Tap notification → open hub
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url || 'https://jperovic22.github.io/convrg-hub/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes('convrg-hub'));
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
   );
 });

@@ -2196,8 +2196,58 @@ Be concise, practical, and agency-focused. Help with captions, content ideas, ra
       input.focus();
     }
 
+    // ── PUSH NOTIFICATIONS ──
+    const VAPID_PUBLIC = 'BPyWmxO1ZNDsNQpt2olW8PEyDT8QaYIE3SBGwJ4-5hbUuGGqobPl6xupMxxjTx7ks-2KRaVZENuNqBNcoOqBvV8';
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
+    }
+
+    async function subscribeToPush(member) {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
+          });
+        }
+        const key = sub.toJSON();
+        // Save subscription to Supabase
+        await sb.from('push_subscriptions').upsert({
+          member: member || 'all',
+          endpoint: key.endpoint,
+          p256dh: key.keys.p256dh,
+          auth: key.keys.auth
+        }, { onConflict: 'endpoint' });
+      } catch(e) {
+        console.log('Push subscription failed:', e.message);
+      }
+    }
+
+    async function requestNotifications() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'granted') {
+        subscribeToPush('all');
+        return;
+      }
+      if (Notification.permission !== 'denied') {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') subscribeToPush('all');
+      }
+    }
+
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+      window.addEventListener('load', async () => {
+        await navigator.serviceWorker.register('sw.js').catch(() => {});
+        // Ask for notification permission after gate clears
+        setTimeout(requestNotifications, 2000);
+      });
     }
   </script>
 
