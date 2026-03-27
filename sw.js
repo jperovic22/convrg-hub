@@ -1,4 +1,4 @@
-const CACHE = 'convrg-hub-v1';
+const CACHE = 'convrg-hub-v2';
 const ASSETS = [
   '/convrg-hub/',
   '/convrg-hub/index.html',
