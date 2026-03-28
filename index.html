@@ -1345,6 +1345,83 @@
       color: #fff;
     }
 
+    /* ===================== ATHLETE RESULTS ===================== */
+    .result-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .result-card-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .result-rider-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .result-rider-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #444;
+      margin-top: 2px;
+    }
+
+    .result-sessions { padding: 8px 0; }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .result-row:last-child { border-bottom: none; }
+
+    .result-session {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .result-pos {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .result-pos.p1 { color: #f4c430; }
+    .result-pos.p2 { color: #aaa; }
+    .result-pos.p3 { color: #cd7f32; }
+
+    .result-lap {
+      font-size: 11px;
+      color: #444;
+      margin-top: 2px;
+      text-align: right;
+    }
+
+    .result-pending {
+      font-size: 11px;
+      color: #333;
+      font-style: italic;
+      padding: 10px 20px;
+    }
+
     /* ===================== MOBILE ===================== */
     @media (max-width: 768px) {
       /* Nav */
@@ -1395,6 +1472,9 @@
       /* Weekend header */
       .weekend-header { flex-direction: column; align-items: flex-start; gap: 12px; }
       .weekend-meta { text-align: left; }
+
+      /* Results grid */
+      #results-grid { grid-template-columns: 1fr !important; }
 
       /* Brand grid */
       .brand-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -1593,7 +1673,7 @@
       <div class="team-card reveal reveal-delay-2">
         <div class="team-header">
           <div class="team-avatar">JC</div>
-          <div><div class="team-name">Jacob</div><div class="team-role">Graphic Designer</div></div>
+          <div><div class="team-name">Jacob</div><div class="team-role">Creative Director</div></div>
         </div>
         <div class="team-tasks" id="tasks-jc"></div>
         <div class="task-add-row">
@@ -1632,8 +1712,17 @@
       <button class="open-btn">Open Workspace →</button>
     </div>
 
+    <!-- CONVRG Athlete Results -->
+    <div id="athlete-results" style="margin-top: 32px; margin-bottom: 8px;">
+      <div class="section-label" style="margin-bottom:16px;">CONVRG Media</div>
+      <h3 style="font-size:20px;font-weight:900;letter-spacing:-0.02em;margin-bottom:20px;">Tonight's Results</h3>
+      <div id="results-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
     <!-- Athletes -->
-    <div class="athlete-row">
+    <div class="athlete-row" style="margin-top:32px;">
       <div class="athlete-card reveal reveal-delay-1" onclick="openWorkspace('Julien Beaumer')">
         <img src="https://res.cloudinary.com/dfpp4cxef/image/upload/v1774568991/athletes/julien-beaumer.png" class="athlete-img" alt="Julien Beaumer">
         <div class="athlete-overlay"></div>
@@ -1880,6 +1969,24 @@
         </div>
       </div>
 
+      <!-- MONSTER JAM -->
+      <div class="brand-card reveal reveal-delay-1" onclick="openWorkspace('Monster Jam')">
+        <div class="brand-card-bg" style="background-image: url('https://res.cloudinary.com/dfpp4cxef/image/upload/v1774623646/convrg/monster-jam-logo.png'); background-color: #0a0a0a;"></div>
+        <div class="brand-card-overlay"></div>
+        <div class="brand-card-content">
+          <div class="brand-status-row">
+            <div class="brand-status status-active">● Active</div>
+          </div>
+          <div class="brand-bottom">
+            <div>
+              <div class="brand-name">Monster Jam</div>
+              <div class="brand-desc">Live clipping · Event coverage · All platforms</div>
+            </div>
+            <div class="brand-arrow">↗</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Add new -->
       <div class="brand-card-add reveal reveal-delay-1" onclick="showAddBrand()">
         <div class="add-icon">+</div>
@@ -2051,6 +2158,7 @@
       'Engine Ice': '/Users/john/CONVRG Media/Engine Ice',
       'Atlas': '/Users/john/CONVRG Media/Atlas',
       'STACYC': '/Users/john/CONVRG Media/STACYC',
+      'Monster Jam': '/Users/john/CONVRG Media/Monster Jam',
       'Julien Beaumer': '/Users/john/CONVRG Media/Athletes/Julien Beaumer',
       'Jordon Smith': '/Users/john/CONVRG Media/Athletes/Jordon Smith',
       'Joey Savatgy': '/Users/john/CONVRG Media/Athletes/Joey Savatgy',
@@ -2117,7 +2225,7 @@
 
     // ── CLAUDE CHAT ──
     let CLAUDE_KEY = localStorage.getItem('convrg_claude_key') || '';
-    const SYSTEM_PROMPT = `You are the AI assistant for CONVRG Media, a social media agency run by Johnny P (Social Media Manager), Shane Doyle (CEO), Porkchop and Cole Nasty (Videographers), and Jacob (Graphic Designer).
+    const SYSTEM_PROMPT = `You are the AI assistant for CONVRG Media, a social media agency run by Johnny P (Social Media Manager), Shane Doyle (CEO), Porkchop and Cole Nasty (Videographers), and Jacob (Creative Director).
 
 CONVRG manages:
 - Supercross 2026 season (17 rounds, currently Round 11 Detroit)
@@ -2199,6 +2307,59 @@ Be concise, practical, and agency-focused. Help with captions, content ideas, ra
       btn.disabled = false;
       input.focus();
     }
+
+    // ── ATHLETE RESULTS ──
+    const RIDERS = [
+      { key: 'Jordon Smith',  tag: '450SX · Triumph' },
+      { key: 'Joey Savatgy',  tag: '450SX' },
+    ];
+
+    const SESSION_ORDER = [
+      'Group A Qualifying 1',
+      'Group A Qualifying 2',
+      'Heat 1',
+      'Heat 2',
+      'Last Chance Qualifier',
+      'Main Event',
+    ];
+
+    async function loadResults() {
+      const { data } = await sb.from('results').select('*').order('updated_at');
+      if (!data) return;
+
+      const grid = document.getElementById('results-grid');
+      grid.innerHTML = RIDERS.map(rider => {
+        const riderResults = data.filter(r => r.rider === rider.key);
+        const sessions = SESSION_ORDER.map(s => {
+          const r = riderResults.find(x => x.session === s);
+          if (!r) return `<div class="result-pending">${s} — pending</div>`;
+          const posClass = r.position === 1 ? 'p1' : r.position === 2 ? 'p2' : r.position === 3 ? 'p3' : '';
+          return `
+            <div class="result-row">
+              <div class="result-session">${s}</div>
+              <div style="text-align:right">
+                <div class="result-pos ${posClass}">P${r.position}</div>
+                ${r.lap_time ? `<div class="result-lap">${r.lap_time}</div>` : ''}
+              </div>
+            </div>`;
+        });
+        return `
+          <div class="result-card">
+            <div class="result-card-header">
+              <div>
+                <div class="result-rider-name">${rider.key}</div>
+                <div class="result-rider-tag">${rider.tag}</div>
+              </div>
+            </div>
+            <div class="result-sessions">${sessions.join('')}</div>
+          </div>`;
+      }).join('');
+    }
+
+    loadResults();
+
+    // Refresh results every 2 minutes during race day
+    setInterval(loadResults, 120000);
 
     // ── PUSH NOTIFICATIONS ──
     const VAPID_PUBLIC = 'BPyWmxO1ZNDsNQpt2olW8PEyDT8QaYIE3SBGwJ4-5hbUuGGqobPl6xupMxxjTx7ks-2KRaVZENuNqBNcoOqBvV8';
